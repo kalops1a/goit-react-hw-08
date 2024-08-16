@@ -1,43 +1,48 @@
-import axios from 'axios';
 import { createAsyncThunk } from '@reduxjs/toolkit';
+import axios from 'axios';
 
-axios.defaults.baseURL = 'https://connections-api.goit.global';
 
-
-export const fetchContacts = createAsyncThunk(
-  'contacts/fetchAll',
-  async (_, thunkAPI) => {
-    try {
-      const response = await axios.get('/contacts');
-      return response.data;
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
-    }
-  }
-);
-
+const BASE_URL = 'https://connections-api.goit.global';
 
 export const addContact = createAsyncThunk(
   'contacts/addContact',
-  async (newContact, thunkAPI) => {
+  async (contact, { rejectWithValue }) => {
     try {
-      const response = await axios.post('/contacts', newContact);
+      const response = await axios.post(`${BASE_URL}/contacts`, contact, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
       return response.data;
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
+      return rejectWithValue(error.response.data.message);
     }
   }
 );
 
 
-export const deleteContact = createAsyncThunk(
-  'contacts/deleteContact',
-  async (contactId, thunkAPI) => {
+export const fetchContacts = createAsyncThunk(
+  'contacts/fetchContacts',
+  async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.delete(`/contacts/${contactId}`);
+      const response = await axios.get(`${BASE_URL}/contacts`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
       return response.data;
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
+      return rejectWithValue(error.response.data.message);
+    }
+  }
+);
+
+export const deleteContact = createAsyncThunk(
+  'contacts/deleteContact',
+  async (contactId, { rejectWithValue }) => {
+    try {
+      await axios.delete(`${BASE_URL}/contacts/${contactId}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      return contactId;
+    } catch (error) {
+      return rejectWithValue(error.response.data.message);
     }
   }
 );

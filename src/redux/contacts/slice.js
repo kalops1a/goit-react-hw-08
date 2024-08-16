@@ -1,5 +1,6 @@
+
 import { createSlice } from '@reduxjs/toolkit';
-import { fetchContacts, addContact, deleteContact } from './operations';
+import { addContact, fetchContacts, deleteContact } from './operations';
 
 const contactsSlice = createSlice({
   name: 'contacts',
@@ -8,46 +9,38 @@ const contactsSlice = createSlice({
     isLoading: false,
     error: null,
   },
+  reducers: {},
   extraReducers: (builder) => {
     builder
-      .addCase(fetchContacts.pending, (state) => {
-        state.isLoading = true;
-      })
       .addCase(fetchContacts.fulfilled, (state, action) => {
-        state.isLoading = false;
         state.items = action.payload;
-        state.error = null;
-      })
-      .addCase(fetchContacts.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload;
-      })
-      .addCase(addContact.pending, (state) => {
-        state.isLoading = true;
       })
       .addCase(addContact.fulfilled, (state, action) => {
-        state.isLoading = false;
         state.items.push(action.payload);
-        state.error = null;
-      })
-      .addCase(addContact.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload;
-      })
-      .addCase(deleteContact.pending, (state) => {
-        state.isLoading = true;
       })
       .addCase(deleteContact.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.items = state.items.filter(
-          (contact) => contact.id !== action.payload.id
-        );
-        state.error = null;
+        state.items = state.items.filter(contact => contact.id !== action.payload);
       })
-      .addCase(deleteContact.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload;
-      });
+      .addMatcher(
+        (action) => action.type.endsWith('/pending'),
+        (state) => {
+          state.isLoading = true;
+          state.error = null;
+        }
+      )
+      .addMatcher(
+        (action) => action.type.endsWith('/rejected'),
+        (state, action) => {
+          state.isLoading = false;
+          state.error = action.payload;
+        }
+      )
+      .addMatcher(
+        (action) => action.type.endsWith('/fulfilled'),
+        (state) => {
+          state.isLoading = false;
+        }
+      );
   },
 });
 

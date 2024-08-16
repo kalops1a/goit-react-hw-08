@@ -1,65 +1,90 @@
-import axios from 'axios';
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import { persistToken, clearToken } from './tokenUtils';
+import axios from 'axios';
+import { saveToken, getToken, removeToken } from './tokenUtils'; 
 
-axios.defaults.baseURL = 'https://connections-api.goit.global';
-
+const BASE_URL = 'https://connections-api.goit.global';
 
 export const register = createAsyncThunk(
   'auth/register',
-  async (credentials, thunkAPI) => {
+  async (credentials, { rejectWithValue }) => {
     try {
-      const response = await axios.post('/users/signup', credentials);
-      persistToken(response.data.token);
+      const response = await axios.post(`${BASE_URL}/users/signup`, credentials);
+      const { token } = response.data;
+      saveToken(token); 
       return response.data;
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
+      return rejectWithValue(error.message);
     }
   }
 );
-
 
 export const login = createAsyncThunk(
   'auth/login',
-  async (credentials, thunkAPI) => {
+  async (credentials, { rejectWithValue }) => {
     try {
-      const response = await axios.post('/users/login', credentials);
-      persistToken(response.data.token);
+      const response = await axios.post(`${BASE_URL}/users/login`, credentials);
+      const { token } = response.data;
+      saveToken(token); 
       return response.data;
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
+      return rejectWithValue(error.message);
     }
   }
 );
 
-
-export const logout = createAsyncThunk('auth/logout', async (_, thunkAPI) => {
-  try {
-    await axios.post('/users/logout');
-    clearToken();
-  } catch (error) {
-    return thunkAPI.rejectWithValue(error.message);
+export const logout = createAsyncThunk(
+  'auth/logout',
+  async (_, { rejectWithValue }) => {
+    try {
+      const token = getToken();
+      if (!token) {
+        throw new Error('No token found');
+      }
+      await axios.post(`${BASE_URL}/users/logout`, {}, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      removeToken(); 
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
   }
-});
-
+);
 
 export const refreshUser = createAsyncThunk(
   'auth/refresh',
-  async (_, thunkAPI) => {
-    const state = thunkAPI.getState();
-    const token = state.auth.token;
-
-    if (!token) {
-      return thunkAPI.rejectWithValue('No valid token found');
-    }
-
+  async (_, { rejectWithValue }) => {
     try {
-      persistToken(token);
-      const response = await axios.get('/users/current');
-      return response.data;
+      const token = getToken();
+      if (!token) {
+        throw new Error('No token found');
+      }
+      const response = await axios.get(`${BASE_URL}/users/current`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      return response.data; 
     } catch (error) {
-      clearToken();
-      return thunkAPI.rejectWithValue(error.message);
+      return rejectWithValue(error.message);
+    }
+  }
+);
+export const addContact = createAsyncThunk(
+  'contacts/addContact',
+  async (contact, { rejectWithValue }) => {
+    try {
+      console.log('Sending contact:', contact); 
+      const response = await axios.post(`${BASE_URL}/contacts`, contact, {
+        headers: {
+          Authorization: `Bearer ${getToken()}`
+        }
+      });
+      return response.data; 
+    } catch (error) {
+      console.error('Error adding contact:', error); 
+      return rejectWithValue(error.message);
     }
   }
 );
