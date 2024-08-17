@@ -1,16 +1,23 @@
-import { createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
-import { saveToken, getToken, removeToken } from './tokenUtils'; 
+import axios from'axios';
+import { createAsyncThunk } from'@reduxjs/toolkit';
 
-const BASE_URL = 'https://connections-api.goit.global';
+const setAuthHeader = token => {
+  axios.defaults.headers.common.Authorization = `Bearer ${token}`;
+};
+
+const clearAuthHeader = () => {
+  axios.defaults.headers.common.Authorization = '';
+};
+
+
+
 
 export const register = createAsyncThunk(
   'auth/register',
   async (credentials, { rejectWithValue }) => {
     try {
-      const response = await axios.post(`${BASE_URL}/users/signup`, credentials);
-      const { token } = response.data;
-      saveToken(token); 
+      const response = await axios.post('/api/auth/register', credentials);
+      setAuthHeader(response.data.token);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -22,30 +29,23 @@ export const login = createAsyncThunk(
   'auth/login',
   async (credentials, { rejectWithValue }) => {
     try {
-      const response = await axios.post(`${BASE_URL}/users/login`, credentials);
-      const { token } = response.data;
-      saveToken(token); 
+      console.log('Dispatching login request with credentials:', credentials);
+      const response = await axios.post('/api/auth/login', credentials);
+      setAuthHeader(response.data.token);
       return response.data;
     } catch (error) {
+      console.error('Error during login:', error);
       return rejectWithValue(error.message);
     }
   }
 );
 
 export const logout = createAsyncThunk(
-  'auth/logout',
+  'auth/logoutUser',
   async (_, { rejectWithValue }) => {
     try {
-      const token = getToken();
-      if (!token) {
-        throw new Error('No token found');
-      }
-      await axios.post(`${BASE_URL}/users/logout`, {}, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      removeToken(); 
+      await axios.post('/api/auth/logout');
+      clearAuthHeader();
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -53,37 +53,20 @@ export const logout = createAsyncThunk(
 );
 
 export const refreshUser = createAsyncThunk(
-  'auth/refresh',
-  async (_, { rejectWithValue }) => {
-    try {
-      const token = getToken();
-      if (!token) {
-        throw new Error('No token found');
-      }
-      const response = await axios.get(`${BASE_URL}/users/current`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      return response.data; 
-    } catch (error) {
-      return rejectWithValue(error.message);
+  'auth/refreshUser',
+  async (_, { getState, rejectWithValue }) => {
+    const state = getState();
+    const persistedToken = state.auth.token;
+
+    if (!persistedToken) {
+      return rejectWithValue('Unable to fetch user');
     }
-  }
-);
-export const addContact = createAsyncThunk(
-  'contacts/addContact',
-  async (contact, { rejectWithValue }) => {
+
     try {
-      console.log('Sending contact:', contact); 
-      const response = await axios.post(`${BASE_URL}/contacts`, contact, {
-        headers: {
-          Authorization: `Bearer ${getToken()}`
-        }
-      });
-      return response.data; 
+      setAuthHeader(persistedToken);
+      const response = await axios.get('/api/auth/refresh');
+      return response.data;
     } catch (error) {
-      console.error('Error adding contact:', error); 
       return rejectWithValue(error.message);
     }
   }

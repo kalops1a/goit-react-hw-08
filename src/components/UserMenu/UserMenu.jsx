@@ -1,19 +1,14 @@
-import React from 'react';
-import { useDispatch } from 'react-redux';
-import { logout } from '../../redux/auth/operations'; 
-import styles from './UserMenu.module.css';
+import React from'react';
+import { useDispatch, useSelector } from'react-redux';
+import { logout } from'../../redux/auth/operations';
+import { selectUser } from'../../redux/auth/selectors';
 
 const UserMenu = () => {
   const dispatch = useDispatch();
-
-  const handleLogout = () => {
-    dispatch(logout());
-  };
+  const user = useSelector(selectUser);
 
   return (
-    <div className={styles.userMenu}>
-      <button onClick={handleLogout} className={styles.logoutButton}>Logout</button>
-    </div>
+    <div><p>Welcome, {user.name}</p><button onClick={() => dispatch(logout())}>Log out</button></div>
   );
 };
 

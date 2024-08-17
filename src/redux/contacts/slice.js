@@ -1,6 +1,5 @@
-
-import { createSlice } from '@reduxjs/toolkit';
-import { addContact, fetchContacts, deleteContact } from './operations';
+import { createSlice } from'@reduxjs/toolkit';
+import { fetchContacts, addContact, deleteContact, logOut } from'./operations';
 
 const contactsSlice = createSlice({
   name: 'contacts',
@@ -10,37 +9,28 @@ const contactsSlice = createSlice({
     error: null,
   },
   reducers: {},
-  extraReducers: (builder) => {
+  extraReducers: builder => {
     builder
-      .addCase(fetchContacts.fulfilled, (state, action) => {
-        state.items = action.payload;
+      .addCase(fetchContacts.pending, (state) => {
+        state.isLoading = true;
       })
-      .addCase(addContact.fulfilled, (state, action) => {
-        state.items.push(action.payload);
+      .addCase(fetchContacts.fulfilled, (state, { payload }) => {
+        state.items = payload;
+        state.isLoading = false;
       })
-      .addCase(deleteContact.fulfilled, (state, action) => {
-        state.items = state.items.filter(contact => contact.id !== action.payload);
+      .addCase(fetchContacts.rejected, (state, { payload }) => {
+        state.error = payload;
+        state.isLoading = false;
       })
-      .addMatcher(
-        (action) => action.type.endsWith('/pending'),
-        (state) => {
-          state.isLoading = true;
-          state.error = null;
-        }
-      )
-      .addMatcher(
-        (action) => action.type.endsWith('/rejected'),
-        (state, action) => {
-          state.isLoading = false;
-          state.error = action.payload;
-        }
-      )
-      .addMatcher(
-        (action) => action.type.endsWith('/fulfilled'),
-        (state) => {
-          state.isLoading = false;
-        }
-      );
+      .addCase(addContact.fulfilled, (state, { payload }) => {
+        state.items.push(payload);
+      })
+      .addCase(deleteContact.fulfilled, (state, { payload }) => {
+        state.items = state.items.filter(contact => contact.id !== payload.id);
+      })
+      .addCase(logOut.fulfilled, (state) => {
+        state.items = []; 
+      });
   },
 });
 
